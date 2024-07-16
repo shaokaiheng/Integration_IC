@@ -164,14 +164,38 @@ def extract_ports(verilog_code):
         })
 
     return ports
-
+def remove_duplicate_lines(text_with_newlines):
+    # 按行分割字符串
+    lines = text_with_newlines.split('\n')
+    # 使用集合来存储不重复的行
+    seen = set()
+    unique_lines = []
+    for line in lines:
+        if line not in seen:
+            seen.add(line)
+            unique_lines.append(line)
+    # 将不重复的行重新组合成一个字符串
+    return '\n'.join(unique_lines)
 # #os operatons:
+instance_mode = str(os.environ.get('MODE'))
+#print(instance_mode)
+if instance_mode=='only_instance_mode':
+    only_instance_mode = True
+    instance_same_name = False
+elif instance_mode=='instance_same_name':
+    instance_same_name = True
+    only_instance_mode = False
+
 directory_path = './input_file'
+output_dir = str(os.environ.get('OUT_DIR'))
+
+
 file_lst = file_input_filter(directory_path)
 print('--------------Files Pass check rules--------------')
 for l in file_lst:
     print(l)
-
+full_wire_str=''
+full_inst_str=''
 #1.get module -- );info
 for file in file_lst:
     module_name=get_filename_without_extension(file)
@@ -194,28 +218,59 @@ for file in file_lst:
             out_str = out_str + 'wire ' +port['width']+' '+ port['name'] + ';\n'
         else:
             out_str=out_str+'wire '+port['name']+';\n'
+    full_wire_str = full_wire_str + out_str
     out_str = out_str + '\n' + module_name + ' '
+    full_inst_str = full_inst_str + '\n' + module_name + ' '
     if parameters:
         # print(parameters)
         out_str = out_str + ' # (\n'
+        full_inst_str = full_inst_str +  ' # (\n'
         print("    This module defined parameters...")
         for index,para in enumerate(parameters):
             # print(f'Setting Default value {para[0]} to {para[1]}')
             print(index,para)
             out_str = out_str.replace(para[0],para[1])
+            full_inst_str = full_inst_str.replace(para[0],para[1])
+            full_wire_str = full_wire_str.replace(para[0],para[1])
             out_str = out_str +'.'+para[0]+' ('+para[1]+')'
+            full_inst_str = full_inst_str +'.'+para[0]+' ('+para[1]+')'
             if index != len(parameters)-1:
                 out_str = out_str +',\n'
+                full_inst_str = full_inst_str+',\n'
             else:
                 out_str = out_str + '\n) '
+                full_inst_str = full_inst_str +'\n) '
     out_str = out_str + module_name + '_u (\n'
+    full_inst_str = full_inst_str + module_name + '_u (\n'
 ######################## The same structure ends here ################################
     #1.MODE-1 only generate instance without connect
-    for index,port in enumerate(ports_info):
-        out_str = out_str +'.'+port['name']+'( )'
-        if index != len(ports_info)-1:
-            out_str=out_str+',\n'
-        else:
-            out_str = out_str + '\n);'
-    with open('./tmp/'+module_name+'.v','w') as file:
+    if only_instance_mode:
+        for index,port in enumerate(ports_info):
+            out_str = out_str +'.'+port['name']+'( )'
+            full_inst_str = full_inst_str +'.'+port['name']+'( )'
+            if index != len(ports_info)-1:
+                out_str=out_str+',\n'
+                full_inst_str = full_inst_str +',\n'
+            else:
+                out_str = out_str + '\n);'
+                full_inst_str = full_inst_str +'\n);'
+    #2.MODE-2 generate instance with same name with define
+    elif instance_same_name:
+        for index,port in enumerate(ports_info):
+            out_str = out_str +'.'+port['name']+'('+port['name']+')'
+            full_inst_str = full_inst_str +'.'+port['name']+'('+port['name']+')'
+            if index != len(ports_info)-1:
+                out_str=out_str+',\n'
+                full_inst_str = full_inst_str +',\n'
+            else:
+                out_str = out_str + '\n);'
+                full_inst_str = full_inst_str + '\n);\n'
+    else:
+        print("Please select a mode!")
+    with open(output_dir+module_name+'.v','w') as file:
         file.write(out_str)
+full_wire_str=remove_duplicate_lines(full_wire_str)
+
+with open(output_dir+'top.v','w') as file:
+    file.write(full_wire_str)
+    file.write(full_inst_str)
