@@ -1,2 +1,4 @@
 This is a script for Auto Instance Modules & Define wires
 You Could Generate chip_top.v By this script (IF block IO to be connected share same var_name)
+
+add at CentOS7.9
