@@ -139,7 +139,8 @@ def remove_ifdefs(verilog_code):
     return result
 def extract_ports(verilog_code):
     # 正则表达式模式，用于匹配模块端口声明
-    pattern = r'\b(input|output|inout)\s+(\bwire\b|\breg\b)?(\s+\[.*?\])?\s*(\w+)\s*(,|\);)?'
+    # pattern = r'\b(input|output|inout)\s+(\bwire\b|\breg\b)?(\s+\[.*?\])?\s*(\w+)\s*(,|\);)?'
+    pattern = r'\b(input|output|inout)\s+(\bwire\b|\breg\b)?(\s*\[.*?\])?\s*(\w+)\s*(,|\);)?'
 
     # 匹配所有端口声明
     matches = re.findall(pattern, verilog_code)
